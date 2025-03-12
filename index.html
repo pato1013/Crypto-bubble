@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Bubble</title>
+    <title>Crypto Table</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,10 +11,9 @@
             color: white;
             padding: 20px;
             transition: background-color 0.3s ease;
-            overflow: hidden;
         }
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: auto;
             text-align: center;
         }
@@ -22,36 +21,33 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 20px;
         }
         .theme-toggle {
             cursor: pointer;
             user-select: none;
         }
-        .crypto-list {
-            position: relative;
-            height: 600px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
         }
-        .crypto-item {
-            position: absolute;
-            background-color: #1e1e1e;
-            padding: 15px;
-            border-radius: 50%;
-            width: 100px;
-            height: 100px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.3s ease;
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
         }
-        .crypto-item:hover {
-            transform: scale(1.1);
+        th {
+            cursor: pointer;
+        }
+        th.sort-asc::after {
+            content: ' 🔼';
+        }
+        th.sort-desc::after {
+            content: ' 🔽';
+        }
+        tr:hover {
             background-color: #2a2a2a;
-        }
-        .icon {
-            width: 50px;
-            height: 50px;
         }
         .positive {
             color: green;
@@ -63,25 +59,35 @@
             background-color: #f0f0f0;
             color: black;
         }
-        .light-theme .crypto-item {
-            background-color: #ddd;
+        .light-theme th, .light-theme td {
+            border-bottom: 1px solid #ccc;
         }
-        .light-theme .crypto-item:hover {
-            background-color: #ccc;
+        .light-theme tr:hover {
+            background-color: #ddd;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h2>Crypto Bubble</h2>
+            <h2>Crypto Table</h2>
             <div class="theme-toggle" onclick="toggleTheme()">Switch to Light Theme</div>
         </div>
-        <div class="crypto-list" id="cryptoList">
-            <!-- Les données seront insérées ici -->
-        </div>
+        <input type="text" id="searchInput" placeholder="Search for a cryptocurrency..." onkeyup="filterTable()">
+        <table id="cryptoTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Name</th>
+                    <th onclick="sortTable(1)">Price (USD)</th>
+                    <th onclick="sortTable(2)">24h Change</th>
+                    <th onclick="sortTable(3)">Market Cap (USD)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Les données seront insérées ici -->
+            </tbody>
+        </table>
     </div>
-    <script src="https://d3js.org/d3.v6.min.js"></script>
     <script>
         const apiUrl = 'https://api.coingecko.com/api/v3/coins/markets';
         const params = {
@@ -92,10 +98,15 @@
             sparkline: false
         };
 
+        let cryptoData = [];
+        let currentSortColumn = null;
+        let currentSortOrder = 'asc';
+
         async function fetchCryptoData() {
             try {
                 const response = await fetch(`${apiUrl}?${new URLSearchParams(params)}`);
                 const data = await response.json();
+                cryptoData = data;
                 displayCryptoData(data);
             } catch (error) {
                 console.error('Erreur lors de la récupération des données :', error);
@@ -103,50 +114,74 @@
         }
 
         function displayCryptoData(data) {
-            const cryptoList = document.getElementById('cryptoList');
-            cryptoList.innerHTML = '';
+            const tbody = document.querySelector('#cryptoTable tbody');
+            tbody.innerHTML = '';
 
-            const width = cryptoList.clientWidth;
-            const height = cryptoList.clientHeight;
+            data.forEach(crypto => {
+                const row = document.createElement('tr');
 
-            const simulation = d3.forceSimulation(data)
-                .force("x", d3.forceX(width / 2).strength(0.05))
-                .force("y", d3.forceY(height / 2).strength(0.05))
-                .force("collide", d3.forceCollide(55))
-                .on("tick", ticked);
+                const nameCell = document.createElement('td');
+                nameCell.innerHTML = `<img src="${crypto.image}" alt="${crypto.name} icon" width="20"> ${crypto.name}`;
+                row.appendChild(nameCell);
 
-            const bubbles = d3.select(cryptoList)
-                .selectAll(".crypto-item")
-                .data(data)
-                .enter().append("div")
-                .attr("class", "crypto-item")
-                .style("left", d => `${d.x}px`)
-                .style("top", d => `${d.y}px`);
+                const priceCell = document.createElement('td');
+                priceCell.textContent = `$${crypto.current_price.toFixed(2)}`;
+                row.appendChild(priceCell);
 
-            bubbles.each(function(d) {
-                const item = d3.select(this);
+                const changeCell = document.createElement('td');
+                changeCell.textContent = `${crypto.price_change_percentage_24h.toFixed(2)}%`;
+                changeCell.classList.add(crypto.price_change_percentage_24h >= 0 ? 'positive' : 'negative');
+                row.appendChild(changeCell);
 
-                item.append("img")
-                    .attr("class", "icon")
-                    .attr("src", d.image)
-                    .attr("alt", `${d.name} icon`);
+                const marketCapCell = document.createElement('td');
+                marketCapCell.textContent = `$${crypto.market_cap.toLocaleString()}`;
+                row.appendChild(marketCapCell);
 
-                item.append("p")
-                    .text(d.name);
+                tbody.appendChild(row);
+            });
+        }
 
-                item.append("p")
-                    .text(`$${d.current_price.toFixed(2)}`);
+        function sortTable(columnIndex) {
+            if (currentSortColumn === columnIndex) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = columnIndex;
+                currentSortOrder = 'asc';
+            }
 
-                item.append("p")
-                    .attr("class", d.price_change_percentage_24h >= 0 ? 'positive' : 'negative')
-                    .text(`${d.price_change_percentage_24h.toFixed(2)}%`);
+            const sortedData = [...cryptoData].sort((a, b) => {
+                let comparison = 0;
+                if (columnIndex === 0) {
+                    comparison = a.name.localeCompare(b.name);
+                } else if (columnIndex === 1) {
+                    comparison = a.current_price - b.current_price;
+                } else if (columnIndex === 2) {
+                    comparison = a.price_change_percentage_24h - b.price_change_percentage_24h;
+                } else if (columnIndex === 3) {
+                    comparison = a.market_cap - b.market_cap;
+                }
+                return currentSortOrder === 'asc' ? comparison : -comparison;
             });
 
-            function ticked() {
-                bubbles
-                    .style("left", d => `${d.x}px`)
-                    .style("top", d => `${d.y}px`);
-            }
+            displayCryptoData(sortedData);
+            updateSortIcons();
+        }
+
+        function updateSortIcons() {
+            const thElements = document.querySelectorAll('#cryptoTable th');
+            thElements.forEach((th, index) => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (index === currentSortColumn) {
+                    th.classList.add(currentSortOrder === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+        }
+
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const filteredData = cryptoData.filter(crypto => crypto.name.toLowerCase().includes(filter));
+            displayCryptoData(filteredData);
         }
 
         function toggleTheme() {

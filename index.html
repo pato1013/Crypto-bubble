@@ -81,6 +81,7 @@
             <!-- Les données seront insérées ici -->
         </div>
     </div>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
     <script>
         const apiUrl = 'https://api.coingecko.com/api/v3/coins/markets';
         const params = {
@@ -105,84 +106,47 @@
             const cryptoList = document.getElementById('cryptoList');
             cryptoList.innerHTML = '';
 
-            data.forEach(crypto => {
-                const item = document.createElement('div');
-                item.classList.add('crypto-item');
+            const width = cryptoList.clientWidth;
+            const height = cryptoList.clientHeight;
 
-                const icon = document.createElement('img');
-                icon.src = crypto.image;
-                icon.alt = `${crypto.name} icon`;
-                icon.classList.add('icon');
-                item.appendChild(icon);
+            const simulation = d3.forceSimulation(data)
+                .force("x", d3.forceX(width / 2).strength(0.05))
+                .force("y", d3.forceY(height / 2).strength(0.05))
+                .force("collide", d3.forceCollide(55))
+                .on("tick", ticked);
 
-                const name = document.createElement('p');
-                name.textContent = crypto.name;
-                item.appendChild(name);
+            const bubbles = d3.select(cryptoList)
+                .selectAll(".crypto-item")
+                .data(data)
+                .enter().append("div")
+                .attr("class", "crypto-item")
+                .style("left", d => `${d.x}px`)
+                .style("top", d => `${d.y}px`);
 
-                const price = document.createElement('p');
-                price.textContent = `$${crypto.current_price.toFixed(2)}`;
-                item.appendChild(price);
+            bubbles.each(function(d) {
+                const item = d3.select(this);
 
-                const change = document.createElement('p');
-                change.textContent = `${crypto.price_change_percentage_24h.toFixed(2)}%`;
-                change.classList.add(crypto.price_change_percentage_24h >= 0 ? 'positive' : 'negative');
-                item.appendChild(change);
+                item.append("img")
+                    .attr("class", "icon")
+                    .attr("src", d.image)
+                    .attr("alt", `${d.name} icon`);
 
-                cryptoList.appendChild(item);
+                item.append("p")
+                    .text(d.name);
 
-                // Set initial position and velocity
-                item.style.left = `${Math.random() * cryptoList.clientWidth}px`;
-                item.style.top = `${Math.random() * cryptoList.clientHeight}px`;
-                item.dataset.velocityX = Math.random() * 2 - 1;
-                item.dataset.velocityY = Math.random() * 2 - 1;
+                item.append("p")
+                    .text(`$${d.current_price.toFixed(2)}`);
+
+                item.append("p")
+                    .attr("class", d.price_change_percentage_24h >= 0 ? 'positive' : 'negative')
+                    .text(`${d.price_change_percentage_24h.toFixed(2)}%`);
             });
 
-            animateBubbles();
-        }
-
-        function animateBubbles() {
-            const items = document.querySelectorAll('.crypto-item');
-            const cryptoList = document.getElementById('cryptoList');
-
-            items.forEach(item => {
-                const rect = item.getBoundingClientRect();
-                const velocityX = parseFloat(item.dataset.velocityX);
-                const velocityY = parseFloat(item.dataset.velocityY);
-
-                let newLeft = rect.left + velocityX;
-                let newTop = rect.top + velocityY;
-
-                // Check for collision with walls
-                if (newLeft <= 0 || newLeft + rect.width >= cryptoList.clientWidth) {
-                    item.dataset.velocityX = -velocityX;
-                    newLeft = rect.left + item.dataset.velocityX;
-                }
-
-                if (newTop <= 0 || newTop + rect.height >= cryptoList.clientHeight) {
-                    item.dataset.velocityY = -velocityY;
-                    newTop = rect.top + item.dataset.velocityY;
-                }
-
-                // Check for collision with other bubbles
-                items.forEach(otherItem => {
-                    if (item !== otherItem) {
-                        const otherRect = otherItem.getBoundingClientRect();
-                        if (rect.right >= otherRect.left && rect.left <= otherRect.right &&
-                            rect.bottom >= otherRect.top && rect.top <= otherRect.bottom) {
-                            // Collision detected, reverse direction
-                            item.dataset.velocityX = -velocityX;
-                            item.dataset.velocityY = -velocityY;
-                            newLeft = rect.left + item.dataset.velocityX;
-                            newTop = rect.top + item.dataset.velocityY;
-                        }
-                    }
-                });
-
-                item.style.left = `${newLeft}px`;
-                item.style.top = `${newTop}px`;
-            });
-
-            requestAnimationFrame(animateBubbles);
+            function ticked() {
+                bubbles
+                    .style("left", d => `${d.x}px`)
+                    .style("top", d => `${d.y}px`);
+            }
         }
 
         function toggleTheme() {
@@ -196,3 +160,4 @@
     </script>
 </body>
 </html>
+

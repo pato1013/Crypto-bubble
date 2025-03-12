@@ -50,6 +50,16 @@
             user-select: none;
             margin-bottom: 20px;
         }
+        .light-theme {
+            background-color: #f0f0f0;
+            color: black;
+        }
+        .light-theme th {
+            background-color: #ddd;
+        }
+        .light-theme tr:hover {
+            background-color: #ccc;
+        }
     </style>
 </head>
 <body>
@@ -82,7 +92,7 @@
 
         async function fetchCryptoData() {
             try {
-                const response = await fetch(``${{apiUrl}?}$`{new URLSearchParams(params)}`);
+                const response = await fetch(`${apiUrl}?${new URLSearchParams(params)}`);
                 const data = await response.json();
                 displayCryptoData(data);
             } catch (error) {
@@ -131,4 +141,3 @@
     </script>
 </body>
 </html>
-

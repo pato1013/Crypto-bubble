@@ -15,24 +15,39 @@
         .container {
             max-width: 800px;
             margin: auto;
+            text-align: center;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .theme-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+        .crypto-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
             margin-top: 20px;
         }
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #333;
-        }
-        th {
+        .crypto-item {
             background-color: #1e1e1e;
-            position: sticky;
-            top: 0;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 10px;
+            width: 150px;
+            text-align: center;
+            transition: transform 0.3s ease;
         }
-        tr:hover {
+        .crypto-item:hover {
+            transform: scale(1.1);
             background-color: #2a2a2a;
+        }
+        .icon {
+            width: 50px;
+            height: 50px;
         }
         .positive {
             color: green;
@@ -40,44 +55,27 @@
         .negative {
             color: red;
         }
-        .icon {
-            width: 24px;
-            height: 24px;
-            margin-right: 10px;
-        }
-        .theme-toggle {
-            cursor: pointer;
-            user-select: none;
-            margin-bottom: 20px;
-        }
         .light-theme {
             background-color: #f0f0f0;
             color: black;
         }
-        .light-theme th {
+        .light-theme .crypto-item {
             background-color: #ddd;
         }
-        .light-theme tr:hover {
+        .light-theme .crypto-item:hover {
             background-color: #ccc;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Crypto Bubble</h2>
-        <div class="theme-toggle" onclick="toggleTheme()">Switch to Light Theme</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Cryptomonnaie</th>
-                    <th>Prix</th>
-                    <th>Variation (24h)</th>
-                </tr>
-            </thead>
-            <tbody id="cryptoTableBody">
-                <!-- Les données seront insérées ici -->
-            </tbody>
-        </table>
+        <div class="header">
+            <h2>Crypto Bubble</h2>
+            <div class="theme-toggle" onclick="toggleTheme()">Switch to Light Theme</div>
+        </div>
+        <div class="crypto-list" id="cryptoList">
+            <!-- Les données seront insérées ici -->
+        </div>
     </div>
 
     <script>
@@ -101,32 +99,33 @@
         }
 
         function displayCryptoData(data) {
-            const tableBody = document.getElementById('cryptoTableBody');
-            tableBody.innerHTML = '';
+            const cryptoList = document.getElementById('cryptoList');
+            cryptoList.innerHTML = '';
 
             data.forEach(crypto => {
-                const row = document.createElement('tr');
+                const item = document.createElement('div');
+                item.classList.add('crypto-item');
 
-                const nameCell = document.createElement('td');
                 const icon = document.createElement('img');
                 icon.src = crypto.image;
                 icon.alt = `${crypto.name} icon`;
                 icon.classList.add('icon');
-                nameCell.appendChild(icon);
-                nameCell.appendChild(document.createTextNode(crypto.name));
+                item.appendChild(icon);
 
-                const priceCell = document.createElement('td');
-                priceCell.textContent = `$${crypto.current_price.toFixed(2)}`;
+                const name = document.createElement('p');
+                name.textContent = crypto.name;
+                item.appendChild(name);
 
-                const changeCell = document.createElement('td');
-                changeCell.textContent = `${crypto.price_change_percentage_24h.toFixed(2)}%`;
-                changeCell.classList.add(crypto.price_change_percentage_24h >= 0 ? 'positive' : 'negative');
+                const price = document.createElement('p');
+                price.textContent = `$${crypto.current_price.toFixed(2)}`;
+                item.appendChild(price);
 
-                row.appendChild(nameCell);
-                row.appendChild(priceCell);
-                row.appendChild(changeCell);
+                const change = document.createElement('p');
+                change.textContent = `${crypto.price_change_percentage_24h.toFixed(2)}%`;
+                change.classList.add(crypto.price_change_percentage_24h >= 0 ? 'positive' : 'negative');
+                item.appendChild(change);
 
-                tableBody.appendChild(row);
+                cryptoList.appendChild(item);
             });
         }
 

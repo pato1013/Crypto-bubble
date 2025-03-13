@@ -1,197 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Table</title>
+    <title>Crypto Spin</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: white;
-            padding: 20px;
-            transition: background-color 0.3s ease;
-        }
-        .container {
-            max-width: 1200px;
-            margin: auto;
             text-align: center;
+            padding: 20px;
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+        #wheel {
+            width: 300px;
+            height: 300px;
+            border: 10px solid #333;
+            border-radius: 50%;
+            margin: 20px auto;
+            position: relative;
         }
-        .theme-toggle {
-            cursor: pointer;
-            user-select: none;
+        #wheel div {
+            width: 50%;
+            height: 50%;
+            position: absolute;
+            background-color: #eee;
+            border: 1px solid #333;
+            transform-origin: 100% 100%;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        #result {
             margin-top: 20px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            cursor: pointer;
-        }
-        th.sort-asc::after {
-            content: ' 🔼';
-        }
-        th.sort-desc::after {
-            content: ' 🔽';
-        }
-        tr:hover {
-            background-color: #2a2a2a;
-        }
-        .positive {
-            color: green;
-        }
-        .negative {
-            color: red;
-        }
-        .light-theme {
-            background-color: #f0f0f0;
-            color: black;
-        }
-        .light-theme th, .light-theme td {
-            border-bottom: 1px solid #ccc;
-        }
-        .light-theme tr:hover {
-            background-color: #ddd;
+            font-size: 24px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>Crypto Table</h2>
-            <div class="theme-toggle" onclick="toggleTheme()">Switch to Light Theme</div>
-        </div>
-        <input type="text" id="searchInput" placeholder="Search for a cryptocurrency..." onkeyup="filterTable()">
-        <table id="cryptoTable">
-            <thead>
-                <tr>
-                    <th onclick="sortTable(0)">Name</th>
-                    <th onclick="sortTable(1)">Price (USD)</th>
-                    <th onclick="sortTable(2)">24h Change</th>
-                    <th onclick="sortTable(3)">Market Cap (USD)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Les données seront insérées ici -->
-            </tbody>
-        </table>
+    <h1>Crypto Spin</h1>
+    <div id="wheel">
+        <!-- Add segments for different cryptocurrencies -->
+        <div style="transform: rotate(0deg) skewY(-60deg); background-color: #f1c40f;">Bitcoin</div>
+        <div style="transform: rotate(60deg) skewY(-60deg); background-color: #e67e22;">Ethereum</div>
+        <div style="transform: rotate(120deg) skewY(-60deg); background-color: #e74c3c;">Ripple</div>
+        <div style="transform: rotate(180deg) skewY(-60deg); background-color: #2ecc71;">Litecoin</div>
+        <div style="transform: rotate(240deg) skewY(-60deg); background-color: #3498db;">Cardano</div>
+        <div style="transform: rotate(300deg) skewY(-60deg); background-color: #9b59b6;">Dogecoin</div>
     </div>
+    <button onclick="spinWheel()">Tourner la roue</button>
+    <div id="result"></div>
+
     <script>
-        const apiUrl = 'https://api.coingecko.com/api/v3/coins/markets';
-        const params = {
-            vs_currency: 'usd',
-            order: 'market_cap_desc',
-            per_page: 100,
-            page: 1,
-            sparkline: false
-        };
+        function spinWheel() {
+            const result = document.getElementById('result');
+            const segments = ['Bitcoin', 'Ethereum', 'Ripple', 'Litecoin', 'Cardano', 'Dogecoin'];
+            const randomIndex = Math.floor(Math.random() * segments.length);
+            const chosenCrypto = segments[randomIndex];
 
-        let cryptoData = [];
-        let currentSortColumn = null;
-        let currentSortOrder = 'asc';
-
-        async function fetchCryptoData() {
-            try {
-                const response = await fetch(`${apiUrl}?${new URLSearchParams(params)}`);
-                const data = await response.json();
-                cryptoData = data;
-                displayCryptoData(data);
-            } catch (error) {
-                console.error('Erreur lors de la récupération des données :', error);
-            }
+            result.textContent = `La roue s'est arrêtée sur : ${chosenCrypto}`;
         }
-
-        function displayCryptoData(data) {
-            const tbody = document.querySelector('#cryptoTable tbody');
-            tbody.innerHTML = '';
-
-            data.forEach(crypto => {
-                const row = document.createElement('tr');
-
-                const nameCell = document.createElement('td');
-                nameCell.innerHTML = `<img src="${crypto.image}" alt="${crypto.name} icon" width="20"> ${crypto.name}`;
-                row.appendChild(nameCell);
-
-                const priceCell = document.createElement('td');
-                priceCell.textContent = `$${crypto.current_price.toFixed(2)}`;
-                row.appendChild(priceCell);
-
-                const changeCell = document.createElement('td');
-                changeCell.textContent = `${crypto.price_change_percentage_24h.toFixed(2)}%`;
-                changeCell.classList.add(crypto.price_change_percentage_24h >= 0 ? 'positive' : 'negative');
-                row.appendChild(changeCell);
-
-                const marketCapCell = document.createElement('td');
-                marketCapCell.textContent = `$${crypto.market_cap.toLocaleString()}`;
-                row.appendChild(marketCapCell);
-
-                tbody.appendChild(row);
-            });
-        }
-
-        function sortTable(columnIndex) {
-            if (currentSortColumn === columnIndex) {
-                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSortColumn = columnIndex;
-                currentSortOrder = 'asc';
-            }
-
-            const sortedData = [...cryptoData].sort((a, b) => {
-                let comparison = 0;
-                if (columnIndex === 0) {
-                    comparison = a.name.localeCompare(b.name);
-                } else if (columnIndex === 1) {
-                    comparison = a.current_price - b.current_price;
-                } else if (columnIndex === 2) {
-                    comparison = a.price_change_percentage_24h - b.price_change_percentage_24h;
-                } else if (columnIndex === 3) {
-                    comparison = a.market_cap - b.market_cap;
-                }
-                return currentSortOrder === 'asc' ? comparison : -comparison;
-            });
-
-            displayCryptoData(sortedData);
-            updateSortIcons();
-        }
-
-        function updateSortIcons() {
-            const thElements = document.querySelectorAll('#cryptoTable th');
-            thElements.forEach((th, index) => {
-                th.classList.remove('sort-asc', 'sort-desc');
-                if (index === currentSortColumn) {
-                    th.classList.add(currentSortOrder === 'asc' ? 'sort-asc' : 'sort-desc');
-                }
-            });
-        }
-
-        function filterTable() {
-            const input = document.getElementById('searchInput');
-            const filter = input.value.toLowerCase();
-            const filteredData = cryptoData.filter(crypto => crypto.name.toLowerCase().includes(filter));
-            displayCryptoData(filteredData);
-        }
-
-        function toggleTheme() {
-            document.body.classList.toggle('light-theme');
-            const toggleButton = document.querySelector('.theme-toggle');
-            toggleButton.textContent = document.body.classList.contains('light-theme') ? 'Switch to Dark Theme' : 'Switch to Light Theme';
-        }
-
-        fetchCryptoData();
-        setInterval(fetchCryptoData, 60000); // Met à jour les données toutes les minutes
     </script>
 </body>
 </html>
